@@ -14,7 +14,7 @@ namespace {
     const std::string COMPLETED_COLUMN = "completed";
     const std::string TABLE_NAME = "todos";
 
-    todod::TodoTask readTask(SQLite::Statement& query) {
+    todod::domain::TodoTask readTask(SQLite::Statement& query) {
         return  {
             .id = { query.getColumn(0).getInt64()},
             .def = domain::TodoDefinition::rehydrate(
@@ -99,7 +99,7 @@ TodoRepository::TodoRepository(std::shared_ptr<db::DataBase> db) :
 {}
 
 TaskOrError TodoRepository::create(const domain::TodoDefinition& def) {
-    return db_->access([&](db::DBAccess& access) { return create(def, access); })
+    return db_->access([&](db::DBAccess& access) { return create(def, access); });
 }
 
 TaskOrError TodoRepository::create(const domain::TodoDefinition& def, db::DBAccess&) {
@@ -149,7 +149,7 @@ TaskOrError TodoRepository::create(const domain::TodoDefinition& def, db::DBAcce
 //     return updated;
 // }
 
-TaskOrError findByID(domain::TodoId id) {
+TaskOrError TodoRepository::findByID(domain::TodoId id) {
     return db_->access([&](db::DBAccess& access) { return findByID(id, access); });
 }
 
@@ -163,7 +163,7 @@ TaskOrError TodoRepository::findByID(domain::TodoId id,  db::DBAccess&) {
             findByIdQuery_.clearBindings();
             return std::nullopt;
         }
-        TodoTask task = readTask(findByIdQuery_);
+        auto task = readTask(findByIdQuery_);
 
         return task;
     } catch (const SQLite::Exception& e) {

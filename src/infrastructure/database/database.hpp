@@ -34,11 +34,21 @@ public:
 
         try {
             if constexpr(std::is_void_v<std::invoke_result<F>>>) {
-                std::invoke(std::forward<F>(f), session);
-                db_.exec("COMMIT");
+                bool commit = true;
+                std::invoke(std::forward<F>(f), session, &commit);
+                if (commit) {
+                    db_.exec("COMMIT");
+                } else {
+                    db_.exec("ROLLBACK");
+                }
             } else {
-                auto result = std::invoke(std::forward<F>(f), session);
-                db_.exec("COMMIT");
+                bool commit = true;
+                auto result = std::invoke(std::forward<F>(f), session, &commit);
+                if (commit) {
+                    db_.exec("COMMIT");
+                } else {
+                    db_.exec("ROLLBACK");
+                }
                 return result;
             }
         } catch (...) {

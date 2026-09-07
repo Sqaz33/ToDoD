@@ -164,7 +164,7 @@ HandlerScriptOrError ScriptRepository::create(const domain::HandlerScriptDefinit
 // }
 
 FindHandlerScriptByEventResult ScriptRepository::findByEvent(domain::TodoEvent event) {
-    return db_->access([&](db::DBAccess& access) { return findByEvent(event, access)});
+    return db_->access([&](db::DBAccess& access) { return findByEvent(event, access); });
 }
 
 FindHandlerScriptByEventResult ScriptRepository::findByEvent(domain::TodoEvent event, db::DBAccess&) {

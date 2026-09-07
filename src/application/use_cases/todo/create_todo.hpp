@@ -4,6 +4,7 @@
 
 #include "domain/todo.hpp"
 #include "application/ports/repository/storage_error.hpp"
+#include "application/service/script_service.hpp"
 
 namespace todod::use_cases::create_todo {
 
@@ -14,10 +15,16 @@ using TodoCreationError =  std::variant<
 
 struct CreateTodoOutput {
     domain::TodoTask todo;
-    HandlerReport handler;
+    service::RunHandlersResult hanldersResult;
 };
 
 using TodoCreationResult = std::expected<CreateTodoOutput, TodoCreationError>;
+
+class CreateTodo {
+public:
+    ...
+    TodoCreationResult run(const domain::TodoInput& input);
+};
 
 TodoCreationResult createTodo(const domain::TodoInput& input);
 
