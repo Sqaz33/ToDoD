@@ -5,11 +5,11 @@
 namespace todod::db::guard {
 
 class StatementResetGuard {
-public:
+  public:
     StatementResetGuard(SQLite::Statement& stm) noexcept;
     ~StatementResetGuard();
 
-private:
+  private:
     SQLite::Statement& stm_;
 };
 

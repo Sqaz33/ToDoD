@@ -1,7 +1,7 @@
 #pragma once
 
-#include <optional>
 #include <cstdint>
+#include <optional>
 #include <string>
 
 namespace todod::scripting::error {
@@ -30,4 +30,4 @@ struct ScriptError {
     std::optional<std::uint32_t> line;
 };
 
-} // todod::scripting::error
+} // namespace todod::scripting::error

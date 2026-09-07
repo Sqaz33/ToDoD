@@ -6,11 +6,8 @@
 
 namespace todod::http {
 
-HttpServer::HttpServer(
-    use_cases::TodoUseCases& todoUseCases,
-    use_cases::HandlerUseCases& handlerUseCases,
-    int port,
-    int threads)
+HttpServer::HttpServer(use_cases::TodoUseCases& todoUseCases,
+                       use_cases::HandlerUseCases& handlerUseCases, int port, int threads)
     : port_(port), threads_(threads) {
     routes::registerTodoRoutes(crowApp_, todoUseCases);
     routes::registerScriptRoutes(crowApp_, handlerUseCases);

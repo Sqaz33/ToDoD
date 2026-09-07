@@ -4,23 +4,26 @@
 
 namespace todod::use_cases {
 
-TodoUseCases::TodoUseCases(
-    repository::TodoRepository& todoRepository,
-    service::HandlerScriptService& handlerService)
+TodoUseCases::TodoUseCases(repository::TodoRepository& todoRepository,
+                           service::HandlerScriptService& handlerService)
     : todoRepository_(todoRepository), handlerService_(handlerService) {}
 
 TodoCreationResult TodoUseCases::createTodo(const domain::TodoInput& input) {
     auto definition = domain::TodoDefinition::create(input);
-    if (!definition) return std::unexpected(TodoCreationError{definition.error()});
+    if (!definition)
+        return std::unexpected(TodoCreationError{definition.error()});
 
     auto created = todoRepository_.create(*definition);
-    if (!created) return std::unexpected(TodoCreationError{created.error()});
+    if (!created)
+        return std::unexpected(TodoCreationError{created.error()});
 
     auto handlers = handlerService_.runHandlers(*created, domain::TodoEvent::ADDED_TODO);
-    if (!handlers) return std::unexpected(TodoCreationError{handlers.error()});
+    if (!handlers)
+        return std::unexpected(TodoCreationError{handlers.error()});
 
     auto finalTodo = todoRepository_.findByID(created->id);
-    if (!finalTodo) return std::unexpected(TodoCreationError{finalTodo.error()});
+    if (!finalTodo)
+        return std::unexpected(TodoCreationError{finalTodo.error()});
     if (!*finalTodo) {
         return std::unexpected(TodoCreationError{db::error::StorageError{
             .code = db::error::StorageErrorCode::Corrupted,
@@ -35,8 +38,7 @@ TodoCreationResult TodoUseCases::createTodo(const domain::TodoInput& input) {
     };
 }
 
-repository::GetTodoPageResult TodoUseCases::getPage(
-    std::int32_t offset, std::int32_t limit) {
+repository::GetTodoPageResult TodoUseCases::getPage(std::int32_t offset, std::int32_t limit) {
     return todoRepository_.getPage(offset, limit);
 }
 

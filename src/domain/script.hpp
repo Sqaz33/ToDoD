@@ -1,12 +1,12 @@
 #pragma once
 
-#include <cstdint>
-#include <expected>
-#include <string>
-
 #include "event.hpp"
 #include "ids.hpp"
 #include "page.hpp"
+
+#include <cstdint>
+#include <expected>
+#include <string>
 
 namespace todod::domain {
 
@@ -30,25 +30,18 @@ class HandlerScriptDefinition;
 using HandlerScriptResult = std::expected<HandlerScriptDefinition, HandlerScriptValidationError>;
 
 class HandlerScriptDefinition {
-public:
+  public:
     static HandlerScriptResult create(const HandlerScriptInput& input);
-    static HandlerScriptDefinition rehydrate(
-        std::string name,
-        std::string source,
-        TodoEvent event,
-        bool enabled);
+    static HandlerScriptDefinition rehydrate(std::string name, std::string source, TodoEvent event,
+                                             bool enabled);
 
     const std::string& name() const noexcept;
     const std::string& source() const noexcept;
     TodoEvent event() const noexcept;
     bool enabled() const noexcept;
 
-private:
-    HandlerScriptDefinition(
-        std::string name,
-        std::string source,
-        TodoEvent event,
-        bool enabled);
+  private:
+    HandlerScriptDefinition(std::string name, std::string source, TodoEvent event, bool enabled);
 
     std::string name_;
     std::string source_;

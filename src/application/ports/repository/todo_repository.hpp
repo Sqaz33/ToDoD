@@ -1,14 +1,14 @@
 #pragma once
 
-#include <memory>
-
 #include "infrastructure/database/database.hpp"
 #include "repository_results.hpp"
+
+#include <memory>
 
 namespace todod::repository {
 
 class TodoRepository {
-public:
+  public:
     explicit TodoRepository(std::shared_ptr<db::DataBase> db);
 
     TaskOrError create(const domain::TodoDefinition& definition);
@@ -23,7 +23,7 @@ public:
     UpdateTodoResult setCompleteStatus(domain::TodoId id, bool status, db::DBAccess&);
     UpdateTodoResult setPriority(domain::TodoId id, int priority, db::DBAccess&);
 
-private:
+  private:
     GetCountResult getCount(db::DBAccess&);
 
     std::shared_ptr<db::DataBase> db_;

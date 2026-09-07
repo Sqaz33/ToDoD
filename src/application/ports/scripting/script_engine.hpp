@@ -1,11 +1,11 @@
 #pragma once
 
-#include <optional>
-
 #include "domain/script.hpp"
 #include "domain/todo.hpp"
 #include "script_api.hpp"
 #include "script_error.hpp"
+
+#include <optional>
 
 namespace todod::scripting::engine {
 
@@ -15,10 +15,8 @@ struct ExecutionResult {
 };
 
 class ScriptEngine {
-public:
-    ExecutionResult execute(
-        const domain::HandlerScript& script,
-        const domain::TodoTask& todo);
+  public:
+    ExecutionResult execute(const domain::HandlerScript& script, const domain::TodoTask& todo);
 };
 
 } // namespace todod::scripting::engine

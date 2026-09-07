@@ -5,7 +5,7 @@ class DataBase;
 namespace todod::db {
 
 class DBAccess {
-private:
+  private:
     explicit DBAccess() = default;
     DBAccess& operator=(const DBAccess&) = delete;
     DBAccess& operator=(DBAccess&&) = delete;

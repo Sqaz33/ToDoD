@@ -1,9 +1,9 @@
 #pragma once
 
+#include "sol.hpp"
+
 #include <chrono>
 #include <cstdint>
-
-#include "sol.hpp"
 
 namespace todod::scripting::limits {
 
@@ -24,11 +24,9 @@ struct LimitState {
 };
 
 class ScriptExecutionLimit {
-public:
-    ScriptExecutionLimit(
-        sol::state& lua,
-        std::chrono::milliseconds timeout,
-        std::int64_t instructionLimit);
+  public:
+    ScriptExecutionLimit(sol::state& lua, std::chrono::milliseconds timeout,
+                         std::int64_t instructionLimit);
 
     ~ScriptExecutionLimit();
 
@@ -37,10 +35,10 @@ public:
     ScriptExecutionLimit(ScriptExecutionLimit&&) = delete;
     ScriptExecutionLimit& operator=(ScriptExecutionLimit&&) = delete;
 
-public:
+  public:
     LimitStatus status() const noexcept;
 
-private:
+  private:
     lua_State* lua_;
     LimitState state_;
 };

@@ -1,14 +1,14 @@
 #pragma once
 
-#include <memory>
-
 #include "infrastructure/database/database.hpp"
 #include "repository_results.hpp"
+
+#include <memory>
 
 namespace todod::repository {
 
 class ScriptRepository {
-public:
+  public:
     explicit ScriptRepository(std::shared_ptr<db::DataBase> db);
 
     HandlerScriptOrError create(const domain::HandlerScriptDefinition& definition);
@@ -18,7 +18,7 @@ public:
     FindHandlerScriptByEventResult findByEvent(domain::TodoEvent event);
     FindHandlerScriptByEventResult findByEvent(domain::TodoEvent event, db::DBAccess&);
 
-private:
+  private:
     std::shared_ptr<db::DataBase> db_;
     SQLite::Statement insertionQuery_;
     SQLite::Statement getAllQuery_;

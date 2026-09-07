@@ -1,27 +1,25 @@
 #pragma once
 
-#include <expected>
-#include <variant>
-
 #include "application/ports/repository/script_repository.hpp"
 #include "application/ports/scripting/script_validator.hpp"
 
+#include <expected>
+#include <variant>
+
 namespace todod::use_cases {
 
-using CreateHandlerError = std::variant<
-    domain::HandlerScriptValidationError,
-    scripting::error::ScriptError,
-    db::error::StorageError>;
+using CreateHandlerError = std::variant<domain::HandlerScriptValidationError,
+                                        scripting::error::ScriptError, db::error::StorageError>;
 using CreateHandlerResult = std::expected<domain::HandlerScript, CreateHandlerError>;
 
 class HandlerUseCases {
-public:
+  public:
     explicit HandlerUseCases(repository::ScriptRepository& repository);
 
     CreateHandlerResult createHandler(const domain::HandlerScriptInput& input);
     repository::GetHandlersResult getHandlers();
 
-private:
+  private:
     repository::ScriptRepository& repository_;
 };
 

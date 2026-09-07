@@ -1,10 +1,10 @@
 #include "todo_repository.hpp"
 
-#include <format>
-#include <utility>
-
 #include "infrastructure/database/sqlite_statement_guard.hpp"
 #include "time/timestamp_helpers.hpp"
+
+#include <format>
+#include <utility>
 
 namespace {
 
@@ -14,8 +14,7 @@ todod::domain::TodoTask readTask(SQLite::Statement& query) {
     return {
         .id = {query.getColumn(0).getInt64()},
         .def = todod::domain::TodoDefinition::rehydrate(
-            query.getColumn(1).getString(),
-            query.getColumn(2).getString(),
+            query.getColumn(1).getString(), query.getColumn(2).getString(),
             query.getColumn(3).getUInt(),
             todod::helpers::fromTimestamp(query.getColumn(4).getInt64()),
             query.getColumn(5).getInt() != 0),
@@ -28,16 +27,14 @@ namespace todod::repository {
 
 TodoRepository::TodoRepository(std::shared_ptr<db::DataBase> db)
     : db_(std::move(db)),
-      insertionQuery_(db_->connection(),
-          "INSERT INTO todos (title, description, priority, completed_at, completed) VALUES (?, ?, ?, ?, ?)"),
-      findByIdQuery_(db_->connection(),
-          "SELECT id, title, description, priority, completed_at, completed FROM todos WHERE id = ?"),
-      setCompleteQuery_(db_->connection(),
-          "UPDATE todos SET completed = ? WHERE id = ?"),
-      setPriorityQuery_(db_->connection(),
-          "UPDATE todos SET priority = ? WHERE id = ?"),
-      getPageQuery_(db_->connection(),
-          "SELECT id, title, description, priority, completed_at, completed FROM todos ORDER BY id DESC LIMIT ? OFFSET ?"),
+      insertionQuery_(db_->connection(), "INSERT INTO todos (title, description, priority, "
+                                         "completed_at, completed) VALUES (?, ?, ?, ?, ?)"),
+      findByIdQuery_(db_->connection(), "SELECT id, title, description, priority, completed_at, "
+                                        "completed FROM todos WHERE id = ?"),
+      setCompleteQuery_(db_->connection(), "UPDATE todos SET completed = ? WHERE id = ?"),
+      setPriorityQuery_(db_->connection(), "UPDATE todos SET priority = ? WHERE id = ?"),
+      getPageQuery_(db_->connection(), "SELECT id, title, description, priority, completed_at, "
+                                       "completed FROM todos ORDER BY id DESC LIMIT ? OFFSET ?"),
       getCountQuery_(db_->connection(), "SELECT COUNT(*) FROM todos") {}
 
 TaskOrError TodoRepository::create(const domain::TodoDefinition& definition) {
@@ -84,12 +81,13 @@ GetTodoPageResult TodoRepository::getPage(std::int32_t offset, std::int32_t limi
     return db_->access([&](db::DBAccess& access) { return getPage(offset, limit, access); });
 }
 
-GetTodoPageResult TodoRepository::getPage(
-    std::int32_t offset, std::int32_t limit, db::DBAccess& access) {
+GetTodoPageResult TodoRepository::getPage(std::int32_t offset, std::int32_t limit,
+                                          db::DBAccess& access) {
     db::guard::StatementResetGuard guard{getPageQuery_};
     try {
         auto count = getCount(access);
-        if (!count) return std::unexpected(count.error());
+        if (!count)
+            return std::unexpected(count.error());
 
         domain::TodoPage page{
             .items = {},
@@ -107,8 +105,7 @@ GetTodoPageResult TodoRepository::getPage(
     }
 }
 
-UpdateTodoResult TodoRepository::setCompleteStatus(
-    domain::TodoId id, bool status, db::DBAccess&) {
+UpdateTodoResult TodoRepository::setCompleteStatus(domain::TodoId id, bool status, db::DBAccess&) {
     db::guard::StatementResetGuard guard{setCompleteQuery_};
     try {
         setCompleteQuery_.bind(1, status);
@@ -116,7 +113,8 @@ UpdateTodoResult TodoRepository::setCompleteStatus(
         setCompleteQuery_.exec();
         return db_->connection().getChanges() != 0;
     } catch (const SQLite::Exception& exception) {
-        return std::unexpected(db::error::StorageError::create("set todo completed status", exception));
+        return std::unexpected(
+            db::error::StorageError::create("set todo completed status", exception));
     }
 }
 

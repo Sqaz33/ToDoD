@@ -1,9 +1,9 @@
 #include "json_serializer.hpp"
 
-#include <variant>
-
 #include "overload/overloaded.hpp"
 #include "time/iso8601_helper.hpp"
+
+#include <variant>
 
 namespace todod::http {
 
@@ -11,20 +11,28 @@ namespace {
 
 std::string commandStatus(service::CommandStatus status) {
     switch (status) {
-        case service::CommandStatus::Applied: return "applied";
-        case service::CommandStatus::Failed: return "failed";
-        case service::CommandStatus::RolledBack: return "rolled_back";
-        case service::CommandStatus::NotExecuted: return "not_executed";
+    case service::CommandStatus::Applied:
+        return "applied";
+    case service::CommandStatus::Failed:
+        return "failed";
+    case service::CommandStatus::RolledBack:
+        return "rolled_back";
+    case service::CommandStatus::NotExecuted:
+        return "not_executed";
     }
     return "failed";
 }
 
 std::string handlerStatus(service::HandlerExecutionStatus status) {
     switch (status) {
-        case service::HandlerExecutionStatus::Success: return "success";
-        case service::HandlerExecutionStatus::ScriptError: return "script_error";
-        case service::HandlerExecutionStatus::LimitExceeded: return "limit_exceeded";
-        case service::HandlerExecutionStatus::CommandError: return "command_error";
+    case service::HandlerExecutionStatus::Success:
+        return "success";
+    case service::HandlerExecutionStatus::ScriptError:
+        return "script_error";
+    case service::HandlerExecutionStatus::LimitExceeded:
+        return "limit_exceeded";
+    case service::HandlerExecutionStatus::CommandError:
+        return "command_error";
     }
     return "script_error";
 }
@@ -35,31 +43,35 @@ crow::json::wvalue commandToJson(const service::CommandResult& result) {
     json["status"] = commandStatus(result.status);
     json["error"] = crow::json::wvalue{};
 
-    std::visit(helpers::overloaded{
-        [&](const scripting::api::SetTodoPriorityCommand& command) {
-            json["type"] = "set_priority";
-            json["todoId"] = command.id.id;
-            json["arguments"]["priority"] = command.priority;
-        },
-        [&](const scripting::api::CompleteTodoCommand& command) {
-            json["type"] = "complete";
-            json["todoId"] = command.id.id;
-            json["arguments"] = crow::json::wvalue::empty_object();
-        }}, result.command);
+    std::visit(helpers::overloaded{[&](const scripting::api::SetTodoPriorityCommand& command) {
+                                       json["type"] = "set_priority";
+                                       json["todoId"] = command.id.id;
+                                       json["arguments"]["priority"] = command.priority;
+                                   },
+                                   [&](const scripting::api::CompleteTodoCommand& command) {
+                                       json["type"] = "complete";
+                                       json["todoId"] = command.id.id;
+                                       json["arguments"] = crow::json::wvalue::empty_object();
+                                   }},
+               result.command);
 
     if (result.commandError) {
         std::visit(helpers::overloaded{
-            [&](const service::RunCommandError&) {
-                json["error"]["code"] = "TODO_NOT_FOUND";
-                json["error"]["message"] = "Todo was not found";
-            },
-            [&](const service::CommandValidationError& error) {
-                json["error"]["code"] = error.code == service::CommandValidationErrorCode::NegativePriority
-                    ? "INVALID_PRIORITY" : "INVALID_TODO_ID";
-                json["error"]["message"] = error.code == service::CommandValidationErrorCode::NegativePriority
-                    ? "priority must be greater than or equal to 0"
-                    : "todo id must be positive";
-            }}, *result.commandError);
+                       [&](const service::RunCommandError&) {
+                           json["error"]["code"] = "TODO_NOT_FOUND";
+                           json["error"]["message"] = "Todo was not found";
+                       },
+                       [&](const service::CommandValidationError& error) {
+                           json["error"]["code"] =
+                               error.code == service::CommandValidationErrorCode::NegativePriority
+                                   ? "INVALID_PRIORITY"
+                                   : "INVALID_TODO_ID";
+                           json["error"]["message"] =
+                               error.code == service::CommandValidationErrorCode::NegativePriority
+                                   ? "priority must be greater than or equal to 0"
+                                   : "todo id must be positive";
+                       }},
+                   *result.commandError);
     } else if (result.storageError) {
         json["error"]["code"] = "DATABASE_ERROR";
         json["error"]["message"] = "Database command failed";
@@ -90,8 +102,8 @@ crow::json::wvalue handlerToJson(const domain::HandlerScript& handler) {
     return json;
 }
 
-crow::json::wvalue handlersReportToJson(
-    const std::vector<service::HandlerExecutionResult>& handlers) {
+crow::json::wvalue
+handlersReportToJson(const std::vector<service::HandlerExecutionResult>& handlers) {
     crow::json::wvalue report;
     crow::json::wvalue::list executions;
     crow::json::wvalue::list failedIds;
@@ -106,11 +118,13 @@ crow::json::wvalue handlersReportToJson(
         execution["durationMs"] = handler.durationMs;
 
         crow::json::wvalue::list logs;
-        for (const auto& log : handler.logs) logs.emplace_back(log);
+        for (const auto& log : handler.logs)
+            logs.emplace_back(log);
         execution["logs"] = std::move(logs);
 
         crow::json::wvalue::list commands;
-        for (const auto& command : handler.commandResults) commands.push_back(commandToJson(command));
+        for (const auto& command : handler.commandResults)
+            commands.push_back(commandToJson(command));
         execution["commands"] = std::move(commands);
         execution["error"] = crow::json::wvalue{};
 
@@ -120,7 +134,8 @@ crow::json::wvalue handlersReportToJson(
             failedIds.emplace_back(handler.id.id);
             if (handler.scriptError) {
                 const bool limit = handler.status == service::HandlerExecutionStatus::LimitExceeded;
-                execution["error"]["code"] = limit ? "EXECUTION_LIMIT_EXCEEDED" : "LUA_RUNTIME_ERROR";
+                execution["error"]["code"] =
+                    limit ? "EXECUTION_LIMIT_EXCEEDED" : "LUA_RUNTIME_ERROR";
                 execution["error"]["message"] = handler.scriptError->diagnostic;
             } else if (handler.storageError) {
                 execution["error"]["code"] = "DATABASE_ERROR";
@@ -130,7 +145,8 @@ crow::json::wvalue handlersReportToJson(
                 execution["error"]["message"] = "Handler commands were rolled back";
                 for (const auto& command : handler.commandResults) {
                     if (command.status == service::CommandStatus::Failed) {
-                        execution["error"]["failedCommandIndex"] = static_cast<std::uint64_t>(command.index);
+                        execution["error"]["failedCommandIndex"] =
+                            static_cast<std::uint64_t>(command.index);
                         break;
                     }
                 }
@@ -149,8 +165,7 @@ crow::json::wvalue handlersReportToJson(
     return report;
 }
 
-crow::response errorResponse(
-    int status, std::string code, std::string message, std::string field) {
+crow::response errorResponse(int status, std::string code, std::string message, std::string field) {
     crow::json::wvalue json;
     json["error"]["code"] = std::move(code);
     json["error"]["message"] = message;

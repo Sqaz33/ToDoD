@@ -1,12 +1,12 @@
 #pragma once
 
+#include "ids.hpp"
+#include "page.hpp"
+
 #include <chrono>
 #include <cstdint>
 #include <expected>
 #include <string>
-
-#include "ids.hpp"
-#include "page.hpp"
 
 namespace todod::domain {
 
@@ -31,14 +31,12 @@ class TodoDefinition;
 using TodoDefinitionResult = std::expected<TodoDefinition, TodoValidationError>;
 
 class TodoDefinition {
-public:
+  public:
     static TodoDefinitionResult create(const TodoInput& input);
-    static TodoDefinition rehydrate(
-        std::string title,
-        std::string description,
-        std::uint32_t priority,
-        std::chrono::system_clock::time_point completedAt,
-        bool completed);
+    static TodoDefinition rehydrate(std::string title, std::string description,
+                                    std::uint32_t priority,
+                                    std::chrono::system_clock::time_point completedAt,
+                                    bool completed);
 
     const std::string& title() const noexcept;
     const std::string& description() const noexcept;
@@ -46,13 +44,9 @@ public:
     const std::chrono::system_clock::time_point& completedAt() const noexcept;
     bool completed() const noexcept;
 
-private:
-    TodoDefinition(
-        std::string title,
-        std::string description,
-        std::uint32_t priority,
-        std::chrono::system_clock::time_point completedAt,
-        bool completed);
+  private:
+    TodoDefinition(std::string title, std::string description, std::uint32_t priority,
+                   std::chrono::system_clock::time_point completedAt, bool completed);
 
     std::string title_;
     std::string description_;

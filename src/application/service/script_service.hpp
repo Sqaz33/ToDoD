@@ -1,5 +1,10 @@
 #pragma once
 
+#include "application/ports/repository/script_repository.hpp"
+#include "application/ports/repository/todo_repository.hpp"
+#include "application/ports/scripting/script_engine.hpp"
+#include "command_validator.hpp"
+
 #include <chrono>
 #include <cstddef>
 #include <expected>
@@ -8,15 +13,12 @@
 #include <variant>
 #include <vector>
 
-#include "application/ports/repository/script_repository.hpp"
-#include "application/ports/repository/todo_repository.hpp"
-#include "application/ports/scripting/script_engine.hpp"
-#include "command_validator.hpp"
-
 namespace todod::service {
 
 enum class RunCommandErrorCode { TodoNotFound };
-struct RunCommandError { RunCommandErrorCode code; };
+struct RunCommandError {
+    RunCommandErrorCode code;
+};
 using CommandError = std::variant<RunCommandError, CommandValidationError>;
 
 enum class CommandStatus { Applied, Failed, RolledBack, NotExecuted };
@@ -43,27 +45,20 @@ struct HandlerExecutionResult {
     std::int64_t durationMs{0};
 };
 
-using RunHandlersResult = std::expected<
-    std::vector<HandlerExecutionResult>,
-    db::error::StorageError>;
+using RunHandlersResult =
+    std::expected<std::vector<HandlerExecutionResult>, db::error::StorageError>;
 
 class HandlerScriptService {
-public:
-    HandlerScriptService(
-        repository::TodoRepository& todoRepository,
-        repository::ScriptRepository& scriptRepository,
-        db::DataBase& database,
-        scripting::engine::ScriptEngine& scriptEngine);
+  public:
+    HandlerScriptService(repository::TodoRepository& todoRepository,
+                         repository::ScriptRepository& scriptRepository, db::DataBase& database,
+                         scripting::engine::ScriptEngine& scriptEngine);
 
-    RunHandlersResult runHandlers(
-        const domain::TodoTask& todo,
-        domain::TodoEvent event);
+    RunHandlersResult runHandlers(const domain::TodoTask& todo, domain::TodoEvent event);
 
-private:
-    CommandResult runCommand_(
-        const scripting::api::ScriptCommand& command,
-        db::DBAccess& access,
-        std::size_t index);
+  private:
+    CommandResult runCommand_(const scripting::api::ScriptCommand& command, db::DBAccess& access,
+                              std::size_t index);
 
     repository::TodoRepository& todoRepository_;
     repository::ScriptRepository& scriptRepository_;

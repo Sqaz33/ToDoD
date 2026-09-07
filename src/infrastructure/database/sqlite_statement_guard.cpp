@@ -1,11 +1,8 @@
 #include "sqlite_statement_guard.hpp"
 
-
 namespace todod::db::guard {
 
-StatementResetGuard::StatementResetGuard(SQLite::Statement& stm) noexcept :
-    stm_(stm)
-{}
+StatementResetGuard::StatementResetGuard(SQLite::Statement& stm) noexcept : stm_(stm) {}
 
 StatementResetGuard::~StatementResetGuard() {
     try {

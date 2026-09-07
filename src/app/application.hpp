@@ -3,8 +3,8 @@
 namespace todod::app {
 
 class TododApp {
-public:
-    TododApp(); 
+  public:
+    TododApp();
 };
 
 } // namespace todod::app

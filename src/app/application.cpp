@@ -1,7 +1,5 @@
 #include "application.hpp"
 
-#include <memory>
-
 #include "application/ports/repository/script_repository.hpp"
 #include "application/ports/repository/todo_repository.hpp"
 #include "application/ports/scripting/script_engine.hpp"
@@ -11,6 +9,8 @@
 #include "http/http_server.hpp"
 #include "infrastructure/database/database.hpp"
 
+#include <memory>
+
 namespace todod::app {
 
 TododApp::TododApp() {
@@ -18,8 +18,8 @@ TododApp::TododApp() {
     repository::TodoRepository todoRepository{database};
     repository::ScriptRepository scriptRepository{database};
     scripting::engine::ScriptEngine scriptEngine;
-    service::HandlerScriptService handlerService{
-        todoRepository, scriptRepository, *database, scriptEngine};
+    service::HandlerScriptService handlerService{todoRepository, scriptRepository, *database,
+                                                 scriptEngine};
     use_cases::TodoUseCases todoUseCases{todoRepository, handlerService};
     use_cases::HandlerUseCases handlerUseCases{scriptRepository};
     http::HttpServer server{todoUseCases, handlerUseCases, 8000, 2};

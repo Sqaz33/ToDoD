@@ -1,8 +1,8 @@
 #pragma once
 
-#include <optional>
-
 #include "application/ports/scripting/script_api.hpp"
+
+#include <optional>
 
 namespace todod::service {
 
@@ -17,7 +17,6 @@ struct CommandValidationError {
 
 using CommandValidationResult = std::optional<CommandValidationError>;
 
-CommandValidationResult validateCommand(
-    const scripting::api::ScriptCommand& command);
+CommandValidationResult validateCommand(const scripting::api::ScriptCommand& command);
 
 } // namespace todod::service
