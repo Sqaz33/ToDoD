@@ -1,13 +1,10 @@
 #pragma once
 
 #include "crow_all.h"
-
-#include "service/script_service.hpp"
+#include "application/use_cases/handler_use_cases.hpp"
 
 namespace todod::http::routes {
 
-void registerScriptRoutes(
-    crow::SimpleApp& app, 
-    service::ScriptService& scriptService);
+void registerScriptRoutes(crow::SimpleApp& app, use_cases::HandlerUseCases& useCases);
 
 } // namespace todod::http::routes

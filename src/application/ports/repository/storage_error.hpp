@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include <SQLiteCpp/SQLiteCpp.h>
+
 namespace todod::db::error {
 
 enum class StorageErrorCode {

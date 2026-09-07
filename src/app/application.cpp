@@ -1,19 +1,29 @@
 #include "application.hpp"
 
+#include <memory>
+
+#include "application/ports/repository/script_repository.hpp"
+#include "application/ports/repository/todo_repository.hpp"
+#include "application/ports/scripting/script_engine.hpp"
+#include "application/service/script_service.hpp"
+#include "application/use_cases/handler_use_cases.hpp"
+#include "application/use_cases/todo_use_cases.hpp"
 #include "http/http_server.hpp"
+#include "infrastructure/database/database.hpp"
 
 namespace todod::app {
 
 TododApp::TododApp() {
-    auto db            = std::make_shared<db::DataBase>("./data.db");
-    auto todoRepo      = std::make_shared<repository::TodoRepository>(db);
-    auto scriptRepo    = std::make_shared<repository::ScriptRepository>(db);
-    auto scirptEngine  = std::make_shared<scripting::ScriptEngine>();
-    auto scriptService = std::make_shared<service::ScriptService>(scirptEngine, scriptRepo, todoRepo);
-    auto todoService   = std::make_shared<service::TodoService>(todoRepo, scriptService);
-    auto server        = std::make_shared<http::HttpServer>(todoService, scriptService, 8000, 2);
-    server->run();
+    auto database = std::make_shared<db::DataBase>("./data.db");
+    repository::TodoRepository todoRepository{database};
+    repository::ScriptRepository scriptRepository{database};
+    scripting::engine::ScriptEngine scriptEngine;
+    service::HandlerScriptService handlerService{
+        todoRepository, scriptRepository, *database, scriptEngine};
+    use_cases::TodoUseCases todoUseCases{todoRepository, handlerService};
+    use_cases::HandlerUseCases handlerUseCases{scriptRepository};
+    http::HttpServer server{todoUseCases, handlerUseCases, 8000, 2};
+    server.run();
 }
-
 
 } // namespace todod::app

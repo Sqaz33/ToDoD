@@ -4,30 +4,18 @@
 
 namespace todod::service {
 
-CommandValidationResult validateCommand(scripting::api::ScriptCommand command) {
+CommandValidationResult validateCommand(
+    const scripting::api::ScriptCommand& command) {
     return std::visit(helpers::overloaded{
-        [](SetTodoPriorityCommand& setPriority) -> CommandValidationResult {
-            if (setPriority.id.id < 0) {
-                return CommandValidationError {
-                    .code = CommandValidationErrorCode::InvalidTodoId;
-                }
-            }
-            if (setPriority.priority < 0) {
-                return CommandValidationError {
-                    .code = CommandValidationErrorCode::NegativePriority;
-                }
-            }
+        [](const scripting::api::SetTodoPriorityCommand& value) -> CommandValidationResult {
+            if (value.id.id <= 0) return CommandValidationError{CommandValidationErrorCode::InvalidTodoId};
+            if (value.priority < 0) return CommandValidationError{CommandValidationErrorCode::NegativePriority};
             return std::nullopt;
         },
-        [](CompleteTodoCommand& complete) -> CommandValidationResult {
-            if (complete.id.id < 0) {
-                return CommandValidationError {
-                    .code = CommandValidationErrorCode::InvalidTodoId;
-                }
-            }
+        [](const scripting::api::CompleteTodoCommand& value) -> CommandValidationResult {
+            if (value.id.id <= 0) return CommandValidationError{CommandValidationErrorCode::InvalidTodoId};
             return std::nullopt;
-        }
-    });
+        }}, command);
+}
 
 } // namespace todod::service
-ё

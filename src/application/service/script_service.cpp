@@ -1,104 +1,141 @@
 #include "script_service.hpp"
 
-#include "command_validator.hpp"
+#include <utility>
+
 #include "overload/overloaded.hpp"
 
 namespace todod::service {
 
 HandlerScriptService::HandlerScriptService(
-    repository::TodoRepository& todoRepo, 
-    repository::ScriptRepository& scriptRepo
-    db::DataBase& db,
-    scripting::engine::ScriptEngine& scriptEngine) : 
-    todoRepo_(todoRepo)
-    , scriptRepo_(scriptRepo)
-    , db_(db)
-    , scriptEngine_(scriptEngine)
-{}
+    repository::TodoRepository& todoRepository,
+    repository::ScriptRepository& scriptRepository,
+    db::DataBase& database,
+    scripting::engine::ScriptEngine& scriptEngine)
+    : todoRepository_(todoRepository),
+      scriptRepository_(scriptRepository),
+      database_(database),
+      scriptEngine_(scriptEngine) {}
 
-std::vector<HandlerExecutionResul> HandlerScriptService::runHandlers(
-    const domain::TodoTask& todo, 
-    domain::TodoEvent event)
-{
-    auto&& handlers = scriptRepo_.findByEvent(event, access);
-    if (handlers) {
-        std::vector<HandlerExecutionResul> handlersRes;
-        for (auto&& handler : handlers.value()) {
-            auto&& engineRes = scriptEngine_.execute(handler, todo);
-            HandlerExecutionResult execRes {
-                .id = handler.id,
-                .scriptError = std::move(engineRes.mbError)
-                .logs = std::move(engineRes.context.logs)
-            };
-            if (execRes.mbError) {
-                handlersRes.push_back(std::move(execRes));
-                continue; // пропускаем обработчик
-            }
-            db_.transaction([&](db::DBAccess& access, bool* commit) {
-                *commit = true;
-                std::size_t idx = 0;
-                for (auto&& com : engineRes.context.commands) {
-                    auto&& comRes = runCommand(com, access, idx++);
-                    execRes.commandResult.push_back(std::move(comRes));
-                    auto&& commandResultBack = execRes.commandResult.back();
-                    if (commandResultBack.mbCommandError || commandResultBack.mbStorageError) {
-                        *commit = false;  // отбрасываем изменения хендлера
-                        break;
-                    } 
+RunHandlersResult HandlerScriptService::runHandlers(
+    const domain::TodoTask& todo,
+    domain::TodoEvent event) {
+    auto handlers = scriptRepository_.findByEvent(event);
+    if (!handlers) return std::unexpected(handlers.error());
+
+    std::vector<HandlerExecutionResult> results;
+    results.reserve(handlers->size());
+
+    for (const auto& handler : *handlers) {
+        const auto started = std::chrono::steady_clock::now();
+        auto engineResult = scriptEngine_.execute(handler, todo);
+
+        HandlerExecutionResult result{
+            .id = handler.id,
+            .name = handler.def.name(),
+            .event = handler.def.event(),
+            .logs = std::move(engineResult.context.logs),
+        };
+
+        if (engineResult.error) {
+            const auto code = engineResult.error->code;
+            result.status =
+                code == scripting::error::ScriptErrorCode::InstructionLimitExceeded ||
+                code == scripting::error::ScriptErrorCode::TimeLimitExceeded
+                ? HandlerExecutionStatus::LimitExceeded
+                : HandlerExecutionStatus::ScriptError;
+            result.scriptError = std::move(engineResult.error);
+        } else {
+            try {
+                database_.transaction([&](db::DBAccess& access, bool* commit) {
+                    std::size_t failedIndex = engineResult.context.commands.size();
+                    for (std::size_t index = 0; index < engineResult.context.commands.size(); ++index) {
+                        auto commandResult = runCommand_(engineResult.context.commands[index], access, index);
+                        const bool failed = commandResult.commandError.has_value() ||
+                                            commandResult.storageError.has_value();
+                        result.commandResults.push_back(std::move(commandResult));
+                        if (failed) {
+                            *commit = false;
+                            failedIndex = index;
+                            result.status = HandlerExecutionStatus::CommandError;
+                            break;
+                        }
+                    }
+
+                    if (!*commit) {
+                        for (auto& commandResult : result.commandResults) {
+                            if (commandResult.status == CommandStatus::Applied) {
+                                commandResult.status = CommandStatus::RolledBack;
+                            }
+                        }
+                        for (std::size_t index = failedIndex + 1;
+                             index < engineResult.context.commands.size(); ++index) {
+                            result.commandResults.push_back(CommandResult{
+                                .index = index,
+                                .command = engineResult.context.commands[index],
+                                .status = CommandStatus::NotExecuted,
+                            });
+                        }
+                    }
+                });
+            } catch (const SQLite::Exception& exception) {
+                result.status = HandlerExecutionStatus::CommandError;
+                result.storageError = db::error::StorageError::create(
+                    "execute handler transaction", exception);
+                for (auto& commandResult : result.commandResults) {
+                    if (commandResult.status == CommandStatus::Applied) {
+                        commandResult.status = CommandStatus::RolledBack;
+                    }
                 }
-            });
-            handlersRes.push_back(std::move(execRes));
+            }
         }
-        return handlersRes;
-    } else {
-        return std::unexpected(handlers.error());
-    }   
+
+        result.durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - started).count();
+        results.push_back(std::move(result));
+    }
+
+    return results;
 }
 
 CommandResult HandlerScriptService::runCommand_(
-    scripting::api::ScriptCommand command,
+    const scripting::api::ScriptCommand& command,
     db::DBAccess& access,
-    std::site_t idx)
-{
-    CommandResult res {
-        .index = idx,
-        .command = std::move(command)
-    };
+    std::size_t index) {
+    CommandResult result{.index = index, .command = command};
 
-    auto validationError = validateCommand(command);
-    if (validationError) {
-        res.mbCommandError = validationError.value();
-        return res;
+    if (auto error = validateCommand(command)) {
+        result.status = CommandStatus::Failed;
+        result.commandError = *error;
+        return result;
     }
+
     std::visit(helpers::overloaded{
-        [&](SetTodoPriorityCommand& setPriority) {
-            auto&& setPriorityRes = todoRepo.setPriority(
-                setPriority.id.id, 
-                setPriority.priority, 
-                access);
-            if (setPriorityRes && !setPriorityRes.value()) {
-                res.mbCommandError = RunCommandError {
-                    .code = RunCommandErrorCode::TodoNotFound
-                };
+        [&](const scripting::api::SetTodoPriorityCommand& value) {
+            auto updated = todoRepository_.setPriority(value.id, value.priority, access);
+            if (!updated) {
+                result.status = CommandStatus::Failed;
+                result.storageError = updated.error();
+            } else if (!*updated) {
+                result.status = CommandStatus::Failed;
+                result.commandError = RunCommandError{RunCommandErrorCode::TodoNotFound};
             } else {
-                res.mbStorageError = setPriorityRes.error();
+                result.status = CommandStatus::Applied;
             }
         },
-        [&](CompleteTodoCommand& complete) {
-            auto&& completeRes = todoRepo.setCompleteStatus(
-                complete.id.id, 
-                true,
-                access);
-            if (completeRes && !completeRes.value()) {
-                res.mbCommandError = RunCommandError {
-                    .code = RunCommandErrorCode::TodoNotFound
-                };
+        [&](const scripting::api::CompleteTodoCommand& value) {
+            auto updated = todoRepository_.setCompleteStatus(value.id, true, access);
+            if (!updated) {
+                result.status = CommandStatus::Failed;
+                result.storageError = updated.error();
+            } else if (!*updated) {
+                result.status = CommandStatus::Failed;
+                result.commandError = RunCommandError{RunCommandErrorCode::TodoNotFound};
             } else {
-                res.mbStorageError = completeRes.error();
+                result.status = CommandStatus::Applied;
             }
-        }
-    });
-    return res;
-} 
+        }}, command);
+
+    return result;
+}
 
 } // namespace todod::service

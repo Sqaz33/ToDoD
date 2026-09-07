@@ -1,59 +1,45 @@
 #pragma once
 
-#include <mutex>
-#include <type_traits>
 #include <functional>
+#include <mutex>
+#include <string>
+#include <type_traits>
+#include <utility>
 
 #include <SQLiteCpp/SQLiteCpp.h>
 
-#include "db_access.hpp" 
+#include "db_access.hpp"
 
 namespace todod::db {
-    
-class DataBase { 
+
+class DataBase {
 public:
     explicit DataBase(const std::string& path);
 
-public:
     SQLite::Database& connection() noexcept;
-    
+
     template <class F>
-    auto access(F&& f) {
-        std::lock_guard<std::mutex> lk{mutex};
-        DBSession session;
-        return std::invoke(std::forward<F>(f), session);
+    auto access(F&& function) {
+        std::lock_guard<std::mutex> lock{mutex_};
+        DBAccess access;
+        return std::invoke(std::forward<F>(function), access);
     }
 
     template <class F>
-    auto transaction(F&& f) {
-        std::lock_guard<std::mutex> lk{mutex};
+    auto transaction(F&& function) {
+        std::lock_guard<std::mutex> lock{mutex_};
+        DBAccess access;
+        SQLite::Transaction transaction{db_};
+        bool commit = true;
 
-        DBSession session;
-
-        db_.exec("BEGIN");
-
-        try {
-            if constexpr(std::is_void_v<std::invoke_result<F>>>) {
-                bool commit = true;
-                std::invoke(std::forward<F>(f), session, &commit);
-                if (commit) {
-                    db_.exec("COMMIT");
-                } else {
-                    db_.exec("ROLLBACK");
-                }
-            } else {
-                bool commit = true;
-                auto result = std::invoke(std::forward<F>(f), session, &commit);
-                if (commit) {
-                    db_.exec("COMMIT");
-                } else {
-                    db_.exec("ROLLBACK");
-                }
-                return result;
-            }
-        } catch (...) {
-            db_.exec("ROLLBACK");
-            throw;
+        using Result = std::invoke_result_t<F, DBAccess&, bool*>;
+        if constexpr (std::is_void_v<Result>) {
+            std::invoke(std::forward<F>(function), access, &commit);
+            if (commit) transaction.commit();
+        } else {
+            auto result = std::invoke(std::forward<F>(function), access, &commit);
+            if (commit) transaction.commit();
+            return result;
         }
     }
 

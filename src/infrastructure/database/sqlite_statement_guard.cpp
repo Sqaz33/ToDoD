@@ -3,7 +3,7 @@
 
 namespace todod::db::guard {
 
-StatementResetGuard::StatementResetGuard(SQLite::Statement& stm) :
+StatementResetGuard::StatementResetGuard(SQLite::Statement& stm) noexcept :
     stm_(stm)
 {}
 

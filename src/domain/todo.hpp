@@ -1,13 +1,12 @@
 #pragma once
 
-#include <string>
 #include <chrono>
 #include <cstdint>
-#include <vector>
 #include <expected>
+#include <string>
 
-#include "page.hpp"
 #include "ids.hpp"
+#include "page.hpp"
 
 namespace todod::domain {
 
@@ -25,43 +24,39 @@ enum class TodoValidationError {
     DescriptionTooLong,
     NegativePriority,
     PriorityTooLarge,
-    InvalidCompletedAtFormat
+    InvalidCompletedAtFormat,
 };
 
 class TodoDefinition;
-
 using TodoDefinitionResult = std::expected<TodoDefinition, TodoValidationError>;
 
 class TodoDefinition {
 public:
-    static TodoDefinitionResult create(const TodoInput& input);  
+    static TodoDefinitionResult create(const TodoInput& input);
     static TodoDefinition rehydrate(
-        const std::string& title,
-        const std::string& description,
-        unsigned priority,
-        const std::chrono::system_clock::time_point& completedAt,
-        bool completed
-    );  
+        std::string title,
+        std::string description,
+        std::uint32_t priority,
+        std::chrono::system_clock::time_point completedAt,
+        bool completed);
 
-public:
     const std::string& title() const noexcept;
     const std::string& description() const noexcept;
-    unsigned priority() const noexcept;
+    std::uint32_t priority() const noexcept;
     const std::chrono::system_clock::time_point& completedAt() const noexcept;
     bool completed() const noexcept;
 
 private:
-    TodoDefinition(       
-        const std::string& title,
-        const std::string& description,
-        unsigned priority,
-        const std::chrono::system_clock::time_point& completedAt,
+    TodoDefinition(
+        std::string title,
+        std::string description,
+        std::uint32_t priority,
+        std::chrono::system_clock::time_point completedAt,
         bool completed);
 
-private:
     std::string title_;
     std::string description_;
-    unsigned priority_;
+    std::uint32_t priority_;
     std::chrono::system_clock::time_point completedAt_;
     bool completed_;
 };
@@ -71,6 +66,6 @@ struct TodoTask {
     TodoDefinition def;
 };
 
-using TodoPage = Page<TodoDefinition>;
+using TodoPage = Page<TodoTask>;
 
 } // namespace todod::domain

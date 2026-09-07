@@ -1,84 +1,58 @@
 #include "script.hpp"
 
 #include <limits>
+#include <utility>
 
 #include "limits.hpp"
-#include "time/iso8601_helper.hpp"
 
 namespace todod::domain {
 
-HandlerScriptDefinition HandlerScriptDefinition::create(const HandlerScriptInput& input) {
+HandlerScriptResult HandlerScriptDefinition::create(const HandlerScriptInput& input) {
     if (input.name.empty()) {
         return std::unexpected(HandlerScriptValidationError::EmptyName);
     }
-
-    if (input.name.length() > limits::HandlerNameMaxBytes) { 
+    if (input.name.size() > limits::HandlerNameMaxBytes) {
         return std::unexpected(HandlerScriptValidationError::NameTooLong);
     }
-
-    if (input.source.length() > limits::TodoDescriptionMaxBytes) {
+    if (input.source.empty()) {
+        return std::unexpected(HandlerScriptValidationError::EmptySource);
+    }
+    if (input.source.size() > limits::HandlerSourceMaxBytes) {
         return std::unexpected(HandlerScriptValidationError::SourceTooLong);
     }
-
     if (input.event < 0) {
         return std::unexpected(HandlerScriptValidationError::NegativeEvent);
     }
-
     if (input.event > std::numeric_limits<int>::max()) {
-        return std::unexpected(HandlerScriptValidationError::UnkownEvent);
+        return std::unexpected(HandlerScriptValidationError::UnknownEvent);
     }
 
-    if (!ALL_EVENTS.contains(static_cast<TodoEvent>(input.event))) {
-        return std::unexpected(HandlerScriptValidationError::UnkownEvent);
+    const auto event = static_cast<TodoEvent>(input.event);
+    if (!ALL_EVENTS.contains(event)) {
+        return std::unexpected(HandlerScriptValidationError::UnknownEvent);
     }
 
-    return HandlerScriptDefinition(
-        input.name,
-        input.source,
-        static_cast<TodoEvent>(input.event),
-        input.enabled
-    );
+    return HandlerScriptDefinition(input.name, input.source, event, input.enabled);
 }
 
 HandlerScriptDefinition HandlerScriptDefinition::rehydrate(
-    const std::string& name,
-    const std::string& source,
+    std::string name,
+    std::string source,
     TodoEvent event,
-    bool enabled,
-) {
-    return TodoDefinition(
-        name,
-        source,
-        event,
-        enabled
-    );
+    bool enabled) {
+    return HandlerScriptDefinition(std::move(name), std::move(source), event, enabled);
 }
 
 HandlerScriptDefinition::HandlerScriptDefinition(
-    const std::string& name,
-    const std::string& source,
+    std::string name,
+    std::string source,
     TodoEvent event,
-    bool enabled) :
-    name_(name)
-    , source_(source)
-    , event_(event)
-    , enabled_(enabled)
-{}
+    bool enabled)
+    : name_(std::move(name)), source_(std::move(source)), event_(event), enabled_(enabled) {}
 
-const std::string& HandlerScriptDefinition::name() const noexcept {
-    return name_;
-}
-
-const std::string& HandlerScriptDefinition::source() const noexcept {
-    return source_;
-}
-
-TodoEvent HandlerScriptDefinition::event() const noexcept {
-    return event_;
-}
-
-bool HandlerScriptDefinition::enabled() const noexcept {
-    return enabled_;
-}
+const std::string& HandlerScriptDefinition::name() const noexcept { return name_; }
+const std::string& HandlerScriptDefinition::source() const noexcept { return source_; }
+TodoEvent HandlerScriptDefinition::event() const noexcept { return event_; }
+bool HandlerScriptDefinition::enabled() const noexcept { return enabled_; }
 
 } // namespace todod::domain

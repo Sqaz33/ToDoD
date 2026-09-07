@@ -16,8 +16,4 @@ SQLite::Database& DataBase::connection() noexcept {
     return db_;
 }
 
-std::mutex& DataBase::mutex() noexcept {
-    return mutex_;
-}
-
-} // namespace todod::db 
+} // namespace todod::db

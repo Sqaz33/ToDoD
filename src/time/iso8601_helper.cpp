@@ -6,7 +6,7 @@
 namespace todod::helpers {
 
 std::string timePointToIso8601(std::chrono::system_clock::time_point tp) {
-    return std::format("{:%FT%T%Z}", tp);
+    return std::format("{:%FT%TZ}", std::chrono::floor<std::chrono::seconds>(tp));
 }
 
 std::chrono::system_clock::time_point iso8601ToTimePoint(const std::string& str) {

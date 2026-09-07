@@ -11,7 +11,7 @@ StorageError StorageError::create(
 ) {
     return {
         .code = mapSqliteError(exception.getErrorCode()),
-        .operation = "create todo",
+        .operation = operation,
         .diagnostic = exception.what()
     };
 }
@@ -31,7 +31,5 @@ StorageErrorCode mapSqliteError(int errorCode) noexcept{
             return StorageErrorCode::Unknown;
     }
 }
-
-
 
 } // namespace todod::db::error

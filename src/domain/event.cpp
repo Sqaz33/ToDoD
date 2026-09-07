@@ -1,5 +1,3 @@
-#include "script.hpp"
-
 #include "event.hpp"
 
 namespace todod::domain {
@@ -10,4 +8,4 @@ const std::set<TodoEvent> ALL_EVENTS {
     #undef X
 };
 
-} // namespace todod
+} // namespace todod::domain

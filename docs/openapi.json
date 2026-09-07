@@ -3,7 +3,7 @@
   "info": {
     "title": "todod HTTP API",
     "version": "0.1.0",
-    "description": "Интерактивное представление целевого контракта из API.md. В текущей реализации доступны только GET и POST /api/todos и POST /api/scripts/handlers; остальные операции еще предстоит реализовать."
+    "description": "Интерактивная документация API. В текущем MVP реализованы получение страницы todo, создание todo с запуском обработчиков, список событий, получение и создание обработчиков. Операции с отдельными todo и изменение/удаление обработчиков пока возвращают 501 Not Implemented."
   },
   "servers": [
     {
@@ -219,7 +219,8 @@
           },
           "400": {"$ref": "#/components/responses/InvalidId"},
           "404": {"$ref": "#/components/responses/TodoNotFound"},
-          "500": {"$ref": "#/components/responses/InternalError"}
+          "500": {"$ref": "#/components/responses/InternalError"},
+          "501": {"$ref": "#/components/responses/NotImplemented"}
         }
       },
       "patch": {
@@ -241,7 +242,8 @@
           "413": {"$ref": "#/components/responses/PayloadTooLarge"},
           "415": {"$ref": "#/components/responses/UnsupportedMediaType"},
           "422": {"$ref": "#/components/responses/ValidationError"},
-          "500": {"$ref": "#/components/responses/InternalError"}
+          "500": {"$ref": "#/components/responses/InternalError"},
+          "501": {"$ref": "#/components/responses/NotImplemented"}
         }
       },
       "delete": {
@@ -256,7 +258,8 @@
           },
           "400": {"$ref": "#/components/responses/InvalidId"},
           "404": {"$ref": "#/components/responses/TodoNotFound"},
-          "500": {"$ref": "#/components/responses/InternalError"}
+          "500": {"$ref": "#/components/responses/InternalError"},
+          "501": {"$ref": "#/components/responses/NotImplemented"}
         }
       }
     },
@@ -331,7 +334,8 @@
           "413": {"$ref": "#/components/responses/PayloadTooLarge"},
           "415": {"$ref": "#/components/responses/UnsupportedMediaType"},
           "422": {"$ref": "#/components/responses/ScriptValidationError"},
-          "500": {"$ref": "#/components/responses/InternalError"}
+          "500": {"$ref": "#/components/responses/InternalError"},
+          "501": {"$ref": "#/components/responses/NotImplemented"}
         }
       },
       "delete": {
@@ -342,7 +346,8 @@
           "204": {"description": "Обработчик удален; тело отсутствует"},
           "400": {"$ref": "#/components/responses/InvalidId"},
           "404": {"$ref": "#/components/responses/HandlerNotFound"},
-          "500": {"$ref": "#/components/responses/InternalError"}
+          "500": {"$ref": "#/components/responses/InternalError"},
+          "501": {"$ref": "#/components/responses/NotImplemented"}
         }
       }
     }
@@ -660,6 +665,10 @@
       "UnsupportedMediaType": {
         "description": "Требуется Content-Type application/json",
         "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}, "example": {"error": {"code": "UNSUPPORTED_MEDIA_TYPE", "message": "Content-Type must be application/json", "details": []}}}}
+      },
+      "NotImplemented": {
+        "description": "Маршрут зарезервирован контрактом, но пока является заглушкой MVP",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}, "example": {"error": {"code": "NOT_IMPLEMENTED", "message": "This endpoint is not implemented yet", "details": []}}}}
       },
       "InternalError": {
         "description": "Внутренняя ошибка приложения",

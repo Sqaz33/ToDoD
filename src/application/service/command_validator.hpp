@@ -1,6 +1,8 @@
 #pragma once
 
-#include "ports/scripting/script_api.hpp"
+#include <optional>
+
+#include "application/ports/scripting/script_api.hpp"
 
 namespace todod::service {
 
@@ -11,11 +13,11 @@ enum class CommandValidationErrorCode {
 
 struct CommandValidationError {
     CommandValidationErrorCode code;
-}
- 
-using CommandValidataionResult = std::optional<CommandValidationError>;
+};
 
-CommandValidationResult validateCommand(scripting::api::ScriptCommand command);
+using CommandValidationResult = std::optional<CommandValidationError>;
 
+CommandValidationResult validateCommand(
+    const scripting::api::ScriptCommand& command);
 
 } // namespace todod::service

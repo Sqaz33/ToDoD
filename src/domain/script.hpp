@@ -1,9 +1,12 @@
 #pragma once
 
 #include <cstdint>
+#include <expected>
 #include <string>
 
 #include "event.hpp"
+#include "ids.hpp"
+#include "page.hpp"
 
 namespace todod::domain {
 
@@ -17,26 +20,24 @@ struct HandlerScriptInput {
 enum class HandlerScriptValidationError {
     EmptyName,
     NameTooLong,
+    EmptySource,
     SourceTooLong,
     NegativeEvent,
-    UnkownEvent,
+    UnknownEvent,
 };
 
 class HandlerScriptDefinition;
-
-using HandlerScriptResult = std::expected<HandlerScriptDefinition, HandlerScript>;
+using HandlerScriptResult = std::expected<HandlerScriptDefinition, HandlerScriptValidationError>;
 
 class HandlerScriptDefinition {
 public:
-    static HandlerScriptDefinition create(const HandlerScriptInput& input);
+    static HandlerScriptResult create(const HandlerScriptInput& input);
     static HandlerScriptDefinition rehydrate(
-        const std::string& name,
-        const std::string& source,
+        std::string name,
+        std::string source,
         TodoEvent event,
-        bool enabled,
-    );
+        bool enabled);
 
-public:
     const std::string& name() const noexcept;
     const std::string& source() const noexcept;
     TodoEvent event() const noexcept;
@@ -44,13 +45,11 @@ public:
 
 private:
     HandlerScriptDefinition(
-        const std::string& name,
-        const std::string& source,
+        std::string name,
+        std::string source,
         TodoEvent event,
-        bool enabled,
-    );
+        bool enabled);
 
-private:
     std::string name_;
     std::string source_;
     TodoEvent event_;
@@ -61,5 +60,7 @@ struct HandlerScript {
     HandlerScriptId id;
     HandlerScriptDefinition def;
 };
+
+using HandlerScriptPage = Page<HandlerScript>;
 
 } // namespace todod::domain

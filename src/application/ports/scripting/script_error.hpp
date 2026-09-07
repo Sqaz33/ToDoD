@@ -8,6 +8,7 @@ namespace todod::scripting::error {
 
 enum class ScriptPhase {
     Compilation,
+    TestRun,
     Execution,
 };
 
@@ -16,7 +17,7 @@ enum class ScriptErrorCode {
     RuntimeError,
     InstructionLimitExceeded,
     TimeLimitExceeded,
-    MemoryLimitExceeded,
+    MemoryAllocationFailed,
     CommandLimitExceeded,
     LogLimitExceeded,
     InternalError,

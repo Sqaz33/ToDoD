@@ -1,24 +1,23 @@
 #pragma once
 
-#include <tuple>
-#include <expected>
+#include <optional>
 
+#include "domain/script.hpp"
+#include "domain/todo.hpp"
 #include "script_api.hpp"
 #include "script_error.hpp"
-#include "domain/todo.hpp"
-#include "domain/script.hpp"
 
 namespace todod::scripting::engine {
 
 struct ExecutionResult {
     api::ScriptContext context;
-    std::optional<error::ScriptError> mbError;
+    std::optional<error::ScriptError> error;
 };
 
 class ScriptEngine {
 public:
     ExecutionResult execute(
-        const domain::HandlerScript& script, 
+        const domain::HandlerScript& script,
         const domain::TodoTask& todo);
 };
 
